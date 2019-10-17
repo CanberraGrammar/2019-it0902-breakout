@@ -12,13 +12,8 @@ import GameplayKit
 class GameScene: SKScene, SKPhysicsContactDelegate {
     
     let BallCategory: UInt32 = 0x1 << 0
-    let TopCategory: UInt32 = 0x1 << 1
     let BottomCategory: UInt32 = 0x1 << 2
-    
-    var topPaddle: SKSpriteNode!
-    var fingerOnTopPaddle: Bool = false
-    var topScoreLabel: SKLabelNode!
-    
+        
     var bottomPaddle: SKSpriteNode!
     var fingerOnBottomPaddle: Bool = false
     var bottomScoreLabel: SKLabelNode!
@@ -31,12 +26,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     var bottomScore = 0
        
     override func didMove(to view: SKView) {
-        
-        topPaddle = childNode(withName: "topPaddle") as? SKSpriteNode
-        topPaddle.physicsBody = SKPhysicsBody(rectangleOf: topPaddle.frame.size)
-        topPaddle.physicsBody!.isDynamic = false
-        
-        topScoreLabel = childNode(withName: "topScoreLabel") as? SKLabelNode
         
         bottomPaddle = childNode(withName: "bottomPaddle") as? SKSpriteNode
         bottomPaddle.physicsBody = SKPhysicsBody(rectangleOf: bottomPaddle.frame.size)
@@ -51,23 +40,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         ball.physicsBody!.linearDamping = 0
         ball.physicsBody!.angularDamping = 0
         ball.physicsBody!.categoryBitMask = BallCategory
-        ball.physicsBody!.contactTestBitMask = TopCategory | BottomCategory
+        ball.physicsBody!.contactTestBitMask = BottomCategory
         ball.physicsBody!.allowsRotation = false
-        
-        let smokeEmitterNode = SKEmitterNode(fileNamed: "SmokeEmitter")
-        smokeEmitterNode!.targetNode = self
-        ball.addChild(smokeEmitterNode!)
-        
+                
         self.physicsWorld.contactDelegate = self
         self.physicsWorld.gravity = CGVector(dx: 0, dy: 0)
         self.physicsBody = SKPhysicsBody(edgeLoopFrom: self.frame)
-                
-        let topNode = SKNode()
-        let topLeftPoint = CGPoint(x: -(self.size.width / 2), y: self.size.height / 2)
-        let topRightPoint = CGPoint(x: self.size.width / 2, y: self.size.height / 2)
-        topNode.physicsBody = SKPhysicsBody(edgeFrom: topLeftPoint, to: topRightPoint)
-        topNode.physicsBody!.categoryBitMask = TopCategory
-        self.addChild(topNode)
         
         let bottomNode = SKNode()
         let bottomLeftPoint = CGPoint(x: -(self.size.width / 2), y: -(self.size.height / 2))
@@ -76,6 +54,27 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         bottomNode.physicsBody!.categoryBitMask = BottomCategory
         self.addChild(bottomNode)
         
+        let numberOfBricks = 6
+        let brickWidth = self.size.width / CGFloat(numberOfBricks)
+        
+        for i in 0..<numberOfBricks {
+            
+            let xCoordinate = (CGFloat(i) * brickWidth) - (self.size.width / 2) + (brickWidth / 2)
+            
+            let brickColor = (i % 2 == 0 ? UIColor.blue : UIColor.red)
+            let brickNode = SKSpriteNode(color: brickColor, size: CGSize(width: brickWidth, height: 25))
+            brickNode.position = CGPoint(x: xCoordinate, y: (self.size.height / 2 - 100))
+            
+            brickNode.physicsBody = SKPhysicsBody(rectangleOf: brickNode.size)
+            
+            self.addChild(brickNode)
+            
+        }
+                
+        /* let testNode = SKSpriteNode(color: .red, size: CGSize(width: 50, height: 50))
+        testNode.position = CGPoint(x: 100, y: 200)
+        self.addChild(testNode) */
+        
     }
     
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
@@ -83,11 +82,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         let touch = touches.first!
         let touchLocation = touch.location(in: self)
         let touchedNode = self.atPoint(touchLocation)
-        
-        if touchedNode.name == "topPaddle" {
-            fingerOnTopPaddle = true
-        }
-        
+                
         if touchedNode.name == "bottomPaddle" {
             fingerOnBottomPaddle = true
         }
@@ -123,19 +118,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         let previousTouchLocation = touch.previousLocation(in: self)
                 
         let distanceToMove = touchLocation.x - previousTouchLocation.x
-        
-        if fingerOnTopPaddle && touchLocation.y > 0 {
-            
-            let paddleNewX = topPaddle.position.x + distanceToMove
-            
-            if (paddleNewX - topPaddle.size.width / 2) > -(self.size.width / 2) && (paddleNewX + topPaddle.size.width / 2 < (self.size.width / 2)) {
-        
-                topPaddle.position.x = paddleNewX
                 
-            }
-            
-        }
-        
         if fingerOnBottomPaddle && touchLocation.y < 0 {
          
             let paddleNewX = bottomPaddle.position.x + distanceToMove
@@ -151,11 +134,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     }
     
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
-        
-        if fingerOnTopPaddle {
-            fingerOnTopPaddle = false
-        }
-        
+                
         if fingerOnBottomPaddle {
             fingerOnBottomPaddle = false
         }
@@ -169,7 +148,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         ball.position.y = 0
         
         // Reset the paddles to their original location
-        topPaddle.position.x = 0
         bottomPaddle.position.x = 0
         
         // Stop the ball from moving
@@ -208,23 +186,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     func didBegin(_ contact: SKPhysicsContact) {
         
         if (contact.bodyA.categoryBitMask == BottomCategory) || (contact.bodyB.categoryBitMask == BottomCategory) {
+            
             print("Bottom collision")
-            
-            topScore += 1
-            topScoreLabel.text = String(topScore)
-            
+                        
             gameOver()
-        }
-        
-        else if (contact.bodyA.categoryBitMask == TopCategory) || (contact.bodyB.categoryBitMask == TopCategory) {
-            print("Top collision")
             
-            bottomScore += 1
-            bottomScoreLabel.text = String(bottomScore)
-            
-            gameOver()
         }
-        
         
     }
     
