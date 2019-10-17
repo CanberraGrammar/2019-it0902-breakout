@@ -13,6 +13,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     
     let BallCategory: UInt32 = 0x1 << 0
     let BottomCategory: UInt32 = 0x1 << 2
+    let BrickCategory: UInt32 = 0x1 << 3
         
     var bottomPaddle: SKSpriteNode!
     var fingerOnBottomPaddle: Bool = false
@@ -66,6 +67,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             brickNode.position = CGPoint(x: xCoordinate, y: (self.size.height / 2 - 100))
             
             brickNode.physicsBody = SKPhysicsBody(rectangleOf: brickNode.size)
+            brickNode.physicsBody!.isDynamic = false
+            brickNode.physicsBody!.categoryBitMask = BrickCategory
+            brickNode.physicsBody!.contactTestBitMask = BallCategory
             
             self.addChild(brickNode)
             
@@ -190,6 +194,18 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             print("Bottom collision")
                         
             gameOver()
+            
+        }
+        
+        else if (contact.bodyA.categoryBitMask == BrickCategory) {
+            
+            contact.bodyA.node!.removeFromParent()
+            
+        }
+        
+        else if (contact.bodyB.categoryBitMask == BrickCategory) {
+            
+            contact.bodyB.node!.removeFromParent()
             
         }
         
