@@ -25,6 +25,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     
     var topScore = 0
     var bottomScore = 0
+    
+    var numberOfBricks = 6
+    var hitCount = 0
        
     override func didMove(to view: SKView) {
         
@@ -55,7 +58,17 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         bottomNode.physicsBody!.categoryBitMask = BottomCategory
         self.addChild(bottomNode)
         
-        let numberOfBricks = 6
+        // Generate the bricks
+        generateBricks(numberOfBricks)
+                
+        /* let testNode = SKSpriteNode(color: .red, size: CGSize(width: 50, height: 50))
+        testNode.position = CGPoint(x: 100, y: 200)
+        self.addChild(testNode) */
+        
+    }
+    
+    func generateBricks(_ numberOfBricks: Int) {
+        
         let brickWidth = self.size.width / CGFloat(numberOfBricks)
         
         for i in 0..<numberOfBricks {
@@ -70,14 +83,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             brickNode.physicsBody!.isDynamic = false
             brickNode.physicsBody!.categoryBitMask = BrickCategory
             brickNode.physicsBody!.contactTestBitMask = BallCategory
+            brickNode.name = "brick"
             
             self.addChild(brickNode)
             
         }
-                
-        /* let testNode = SKSpriteNode(color: .red, size: CGSize(width: 50, height: 50))
-        testNode.position = CGPoint(x: 100, y: 200)
-        self.addChild(testNode) */
         
     }
     
@@ -161,19 +171,40 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         // Alternative way to stop the ball from moving
         // ball.physicsBody!.velocity = CGVector(dx: 0, dy: 0)
         
+        // Remove all remaining bricks from the scene
+        self.enumerateChildNodes(withName: "brick") { (brickNode, finished) in
+            brickNode.removeFromParent()
+        }
+                
+        // Regenerate a new set of bricks
+        generateBricks(numberOfBricks)
+        
+        // Reset the hitCount
+        hitCount = 0
+        
         // Unpause the view
         self.view!.isPaused = false
         
     }
     
-    func gameOver() {
+    func gameOver(playerWon: Bool) {
         
         // Pause the game
         self.view!.isPaused = true
         self.gameRunning = false
         
+        // Create a default message
+        var winMessage = "You lost :("
+        
+        // The player has won
+        if playerWon {
+            winMessage = "You won :)"
+            bottomScore += 1
+            bottomScoreLabel.text = String(bottomScore)
+        }
+        
         // Show an alert
-        let gameOverAlert = UIAlertController(title: "Game Over", message: nil, preferredStyle: .alert)
+        let gameOverAlert = UIAlertController(title: "Game Over", message: winMessage, preferredStyle: .alert)
         let gameOverAction = UIAlertAction(title: "Okay", style: .default) { (theAlertAction) in
             
             // Reset game
@@ -193,19 +224,28 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             
             print("Bottom collision")
                         
-            gameOver()
+            gameOver(playerWon: false)
             
         }
         
         else if (contact.bodyA.categoryBitMask == BrickCategory) {
             
             contact.bodyA.node!.removeFromParent()
+            hitCount += 1
             
         }
         
         else if (contact.bodyB.categoryBitMask == BrickCategory) {
             
             contact.bodyB.node!.removeFromParent()
+            hitCount += 1
+            
+        }
+        
+        // Check if the player has won
+        if hitCount == numberOfBricks {
+            
+            gameOver(playerWon: true)
             
         }
         
